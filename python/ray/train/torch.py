@@ -343,6 +343,23 @@ def setup_torch_process_group(
         init_method (str): URL specifying how to initialize the process group.
         timeout_s (timedelta): Seconds for process group operations to timeout.
     """
+    
+    print("------------------------------------------------------------------------------")
+    print(f"Running the 'setup_torch_process_group' function on Worker {world_rank}!")
+    
+    os.environ["RANK"]=str(world_rank)
+    os.environ["SIZE"]=str(world_size)
+
+
+    print(
+        f"Setting up process group for: {init_method} [rank={world_rank}, "
+        f"world_size={world_size}]"
+    )
+    print(f"Using {backend} backend.")
+    print("------------------------------------------------------------------------------")
+
+
+
     logger.info(
         f"Setting up process group for: {init_method} [rank={world_rank}, "
         f"world_size={world_size}]"

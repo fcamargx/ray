@@ -716,6 +716,7 @@ class DockerCommandRunner(CommandRunnerInterface):
                 docker_cmd=self.docker_cmd,
             )[0]
 
+
             self.ssh_command_runner.run(
                 "{} && rsync -e '{} exec -i' -avz {} {}:{}".format(
                     prefix,
@@ -746,6 +747,7 @@ class DockerCommandRunner(CommandRunnerInterface):
         if not options.get("docker_mount_if_possible", False):
             # NOTE: `--delete` is okay here because the container is the source
             # of truth.
+
             self.ssh_command_runner.run(
                 "rsync -e '{} exec -i' -avz --delete {}:{} {}".format(
                     self.docker_cmd,
@@ -755,6 +757,7 @@ class DockerCommandRunner(CommandRunnerInterface):
                 ),
                 silent=is_rsync_silent(),
             )
+
         self.ssh_command_runner.run_rsync_down(host_source, target, options=options)
 
     def remote_shell_command_str(self):
@@ -821,6 +824,13 @@ class DockerCommandRunner(CommandRunnerInterface):
                     .decode("utf-8")
                     .strip()
                 )
+
+                ###########################################################################################
+                # Installs latest version of rsync grsync on SMDDP docker image required to start Ray head
+                self.ssh_command_runner.run("docker exec -it smddp_test apt-get update")
+                self.ssh_command_runner.run("docker exec -it smddp_test apt-get -y install rsync grsync")
+                ########################################################################################### 
+
 
             if any_char:
                 return string.replace("~/", self.home_dir + "/")

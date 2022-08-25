@@ -338,7 +338,19 @@ class WorkerGroup:
         metadata = ray.get(new_actor_metadata)
 
         for i in range(len(new_actors)):
-            self.workers.append(Worker(actor=new_actors[i], metadata=metadata[i]))
+
+            actor_inter = new_actors[i]
+            metadata_inter = metadata[i]
+
+            print("------------------------------------------------------------------------------")
+            print("Worker " + str(i) + " created: " + str(actor_inter))
+            print("Worker Metadata: " +  str(metadata_inter))
+            print("------------------------------------------------------------------------------")
+
+            temp = Worker(actor= actor_inter, metadata= metadata_inter)
+            #print(temp)
+
+            self.workers.append(temp)
 
     def __len__(self):
         return len(self.workers)

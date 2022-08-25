@@ -89,6 +89,7 @@ class TrainingWorkerError(Exception):
 
 
 class BackendExecutor:
+
     """Main execution class for training backends.
 
     This class holds a worker group and is responsible for executing the
@@ -141,6 +142,8 @@ class BackendExecutor:
         train_cls_args: Optional[Tuple] = None,
         train_cls_kwargs: Optional[Dict] = None,
     ):
+        print("\n************************ ENTERING (backend.py). ************************")
+        print("Attempting to create a Worker Group in BackendExecutor.\n")
         """Starts the worker group."""
         self._create_placement_group()
         placement_group = self._placement_group or "default"
@@ -154,21 +157,27 @@ class BackendExecutor:
             actor_cls_kwargs=train_cls_kwargs,
             placement_group=placement_group,
         )
+        print("A Worker group has been successfully created.")
+        print("Running initialization hook if passed in Trainer.\n")
         try:
             if initialization_hook:
                 self._initialization_hook = initialization_hook
                 self.worker_group.execute(initialization_hook)
 
+            print("Setting CUDA visible devices on all workers.\n")
             share_cuda_visible_devices_enabled = bool(
                 env_integer(
                     ENABLE_SHARE_CUDA_VISIBLE_DEVICES_ENV,
                     self._backend.share_cuda_visible_devices,
                 )
             )
-
             if self._num_gpus_per_worker > 0 and share_cuda_visible_devices_enabled:
                 self._share_cuda_visible_devices()
+            print("Backend setup complete, starting backend with worker group and specified backend configuration!\n")
+            print("\n************************ ENTERING (torch.py). ************************")
             self._backend.on_start(self.worker_group, self._backend_config)
+            print("\n************************ LEAVING (torch.py). ************************")
+
         except RayActorError as exc:
             logger.exception(str(exc))
             logger.warning(
@@ -321,6 +330,8 @@ class BackendExecutor:
         dataset_spec: _RayDatasetSpec,
         checkpoint: Optional[Dict] = None,
     ) -> None:
+        print("\n************************  ENTERING (trainer.py). ************************")
+        print("Executing Training function on all workers in a seperate thread.\n")
         """Executes a training function on all workers in a separate thread.
 
         ``finish_training`` should be called after this.
@@ -373,8 +384,14 @@ class BackendExecutor:
             self.dataset_shards = dataset_spec.get_dataset_shards(actors)
 
         local_rank_map = self._create_local_rank_map()
+        print("\nLocal rank map created")
+        print(local_rank_map)
 
         futures = []
+        print("Worker Group will execute 'initialize_session', and start a session.\n")
+        print("------------------------------------------------------------------------------")
+        print("Running the 'initialize_session' function on Worker Group!")
+        print("------------------------------------------------------------------------------\n")
         for index in range(len(self.worker_group)):
             futures.append(
                 self.worker_group.execute_single_async(
@@ -396,6 +413,10 @@ class BackendExecutor:
         def train_async():
             session = get_session()
             session.start()
+        print("Training function will run asynchronously in its own thread, session now starting.\n")
+        print("------------------------------------------------------------------------------")
+        print("Running the 'train_async' function asynchronously on Worker Group!")
+        print("------------------------------------------------------------------------------\n")
 
         self.worker_group.execute_async(train_async)
 
